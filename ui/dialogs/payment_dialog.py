@@ -4,14 +4,14 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QCheckBox
 )
 from qfluentwidgets import (
-    DateTimeEdit, ComboBox, LineEdit, PushButton, PrimaryPushButton,
+    ComboBox, LineEdit, PushButton, PrimaryPushButton,
     InfoBar, InfoBarPosition, SubtitleLabel, BodyLabel, CaptionLabel
 )
 from database import get_session, Prestamo, Pago
 from config import DATETIME_FORMAT, CURRENCY_SYMBOL
 from services.financial_service import calcular_prestamo
 from services.notification_service import redactar_comprobante_pago, abrir_whatsapp
-from ui.components.custom_spinbox import CurrencySpinBox
+from ui.components.custom_spinbox import CurrencySpinBox, CustomDateTimeEdit
 from ui.theme import ThemePalette
 
 
@@ -23,7 +23,7 @@ class PaymentDialog(QDialog):
         super().__init__(parent)
         self.prestamo_id = prestamo_id
         self.setWindowTitle(f"Registrar Pago - Préstamo #{prestamo_id}")
-        self.setFixedSize(500, 450)
+        self.setFixedSize(500, 460)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         self._load_loan_summary()
@@ -47,10 +47,10 @@ class PaymentDialog(QDialog):
         header = SubtitleLabel(f"Registrar Abono - {self.cliente_nombre}", self)
         layout.addWidget(header)
 
-        saldo_color = "#FB7185" if ThemePalette.is_dark() else "#DC2626"
-        saldo_info = BodyLabel(
-            f"Saldo restante a pagar: <b style='color:{saldo_color};'>{CURRENCY_SYMBOL}{self.calc.saldo_restante:,.2f}</b> "
-            f"(Total base: {CURRENCY_SYMBOL}{self.calc.total_base:,.2f} | Mora: {CURRENCY_SYMBOL}{self.calc.mora_acumulada:,.2f})",
+        saldo_color = "#FB7185" if ThemePalette.is_dark() else "#B91C1C"
+        saldo_info = QLabel(
+            f"Saldo restante a pagar: <b style='color:{saldo_color}; font-size:15px;'>{CURRENCY_SYMBOL}{self.calc.saldo_restante:,.2f}</b><br>"
+            f"<span style='color:{ThemePalette.text_secondary()}; font-size:12px;'>Total base: {CURRENCY_SYMBOL}{self.calc.total_base:,.2f} | Mora: {CURRENCY_SYMBOL}{self.calc.mora_acumulada:,.2f}</span>",
             self
         )
         layout.addWidget(saldo_info)
@@ -58,6 +58,11 @@ class PaymentDialog(QDialog):
         # Form layout
         form = QFormLayout()
         form.setSpacing(12)
+
+        def make_field_label(text: str) -> QLabel:
+            lbl = QLabel(text, self)
+            lbl.setStyleSheet(f"font-size: 13px; font-weight: 600; color: {ThemePalette.text_primary()};")
+            return lbl
 
         # Monto input with CurrencySpinBox and Max helper button
         monto_container = QHBoxLayout()
@@ -69,28 +74,29 @@ class PaymentDialog(QDialog):
         self.btn_pay_all.setToolTip("Cargar el monto total adeudado")
         self.btn_pay_all.clicked.connect(lambda: self.monto_spin.setValue(self.calc.saldo_restante))
         monto_container.addWidget(self.btn_pay_all)
-        form.addRow("Monto a Pagar *:", monto_container)
+        form.addRow(make_field_label("Monto a Pagar *:"), monto_container)
 
-        # Fecha y hora
-        self.fecha_edit = DateTimeEdit(self)
+        # Fecha y hora using CustomDateTimeEdit (Fixed width)
+        self.fecha_edit = CustomDateTimeEdit(self)
         self.fecha_edit.setDateTime(QDateTime.currentDateTime())
-        form.addRow("Fecha y Hora:", self.fecha_edit)
+        form.addRow(make_field_label("Fecha y Hora:"), self.fecha_edit)
 
         # Metodo de pago
         self.metodo_combo = ComboBox(self)
         self.metodo_combo.addItems(["Efectivo", "Transferencia Bancaria", "Mercado Pago", "Tarjeta", "Otro"])
-        form.addRow("Método de Pago:", self.metodo_combo)
+        form.addRow(make_field_label("Método de Pago:"), self.metodo_combo)
 
         # Comprobante / Referencia
         self.comprobante_input = LineEdit(self)
         self.comprobante_input.setPlaceholderText("Ej: Transf #9821734 o Recibo #042")
-        form.addRow("Comprobante / Ref:", self.comprobante_input)
+        form.addRow(make_field_label("Comprobante / Ref:"), self.comprobante_input)
 
         layout.addLayout(form)
 
         # WhatsApp Checkbox
         self.whatsapp_check = QCheckBox("Enviar recibo/comprobante por WhatsApp tras guardar", self)
         self.whatsapp_check.setChecked(bool(self.cliente_telefono))
+        self.whatsapp_check.setStyleSheet(f"font-size: 13px; font-weight: 500; color: {ThemePalette.text_primary()};")
         layout.addWidget(self.whatsapp_check)
 
         layout.addStretch()

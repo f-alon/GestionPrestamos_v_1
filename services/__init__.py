@@ -17,6 +17,16 @@ from services.export_service import (
     export_prestamos_csv,
     export_prestamos_excel
 )
+from services.cash_service import (
+    CashSummary,
+    get_capital_inicial,
+    set_capital_inicial,
+    calcular_balance_caja,
+    registrar_cierre_diario,
+    obtener_datos_balance_mensual,
+    exportar_balance_mensual_pdf,
+    exportar_balance_mensual_excel
+)
 
 __all__ = [
     "FinancialSummary",
@@ -32,6 +42,13 @@ __all__ = [
     "redactar_comprobante_pago",
     "backup_database",
     "export_prestamos_csv",
-    "export_prestamos_excel"
+    "export_prestamos_excel",
+    "CashSummary",
+    "get_capital_inicial",
+    "set_capital_inicial",
+    "calcular_balance_caja",
+    "registrar_cierre_diario",
+    "obtener_datos_balance_mensual",
+    "exportar_balance_mensual_pdf",
+    "exportar_balance_mensual_excel"
 ]
-

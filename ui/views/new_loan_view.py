@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QFrame
 )
 from qfluentwidgets import (
-    EditableComboBox, DateEdit, ComboBox,
+    EditableComboBox, ComboBox,
     PrimaryPushButton, PushButton, ToolButton, CardWidget, FluentIcon,
     InfoBar, InfoBarPosition, TitleLabel, SubtitleLabel, CaptionLabel,
     BodyLabel, StrongBodyLabel, qconfig
@@ -21,7 +21,12 @@ from services.financial_service import simular_prestamo, calcular_fecha_fin
 from services.scoring_service import evaluar_cliente, ScoringResult
 from ui.dialogs.client_dialog import ClientDialog
 from ui.components.scoring_badge import ScoringBadge
-from ui.components.custom_spinbox import CurrencySpinBox, PercentSpinBox, IntegerSpinBox
+from ui.components.custom_spinbox import (
+    CurrencySpinBox,
+    PercentSpinBox,
+    IntegerSpinBox,
+    CustomDateEdit
+)
 from ui.theme import ThemePalette
 
 
@@ -39,6 +44,7 @@ class NewLoanView(QWidget):
     - Smart autocomplete client selector with accent-insensitive search
     - Instant automatic credit scoring evaluation & alert banner display
     - Large-format currency input supporting values from $ 100 up to $ 1,000,000,000.00
+    - Wide CustomDateEdit components for start date and end date
     - Real-time side summary panel updating live
     - High-contrast typography and theme adaptation
     """
@@ -87,14 +93,20 @@ class NewLoanView(QWidget):
         # LEFT: Form Card
         self.card_form = CardWidget(self)
         form_card_layout = QVBoxLayout(self.card_form)
-        form_card_layout.setContentsMargins(20, 20, 20, 20)
-        form_card_layout.setSpacing(14)
+        form_card_layout.setContentsMargins(22, 22, 22, 22)
+        form_card_layout.setSpacing(16)
 
         form_title = SubtitleLabel("Datos de la Operación", self.card_form)
         form_card_layout.addWidget(form_title)
 
         form = QFormLayout()
-        form.setSpacing(12)
+        form.setSpacing(14)
+        form.setLabelAlignment(Qt.AlignLeft)
+
+        def make_field_label(text: str) -> QLabel:
+            lbl = QLabel(text, self)
+            lbl.setStyleSheet(f"font-size: 13px; font-weight: 600; color: {ThemePalette.text_primary()};")
+            return lbl
 
         # 1. Cliente selector + '+' button
         client_row = QHBoxLayout()
@@ -110,23 +122,23 @@ class NewLoanView(QWidget):
         self.btn_new_client.clicked.connect(self._open_new_client_dialog)
         client_row.addWidget(self.btn_new_client)
 
-        form.addRow("Cliente *:", client_row)
+        form.addRow(make_field_label("Cliente *:"), client_row)
 
         # Client scoring status row
         self.scoring_widget = ScoringBadge(parent=self)
-        form.addRow("Evaluación Crediticia:", self.scoring_widget)
+        form.addRow(make_field_label("Evaluación Crediticia:"), self.scoring_widget)
 
         # 2. Monto Prestado (Capital) using enhanced CurrencySpinBox
         self.monto_spin = CurrencySpinBox(self)
         self.monto_spin.setValue(10000.0)
         self.monto_spin.valueChanged.connect(self._recalculate_preview)
-        form.addRow("Capital a Prestar *:", self.monto_spin)
+        form.addRow(make_field_label("Capital a Prestar *:"), self.monto_spin)
 
         # 3. Porcentaje Interes using PercentSpinBox
         self.interes_spin = PercentSpinBox(self)
         self.interes_spin.setValue(DEFAULT_INTEREST_RATE)
         self.interes_spin.valueChanged.connect(self._recalculate_preview)
-        form.addRow("Tasa de Interés Base *:", self.interes_spin)
+        form.addRow(make_field_label("Tasa de Interés Base *:"), self.interes_spin)
 
         # 4. Tipo y Duracion de Plazo using IntegerSpinBox
         plazo_row = QHBoxLayout()
@@ -141,18 +153,18 @@ class NewLoanView(QWidget):
         self.tipo_plazo_combo.currentIndexChanged.connect(self._on_term_params_changed)
         plazo_row.addWidget(self.tipo_plazo_combo)
 
-        form.addRow("Plazo Pactado *:", plazo_row)
+        form.addRow(make_field_label("Plazo Pactado *:"), plazo_row)
 
-        # 5. Fechas: Inicio y Fin
-        self.fecha_inicio_edit = DateEdit(self)
+        # 5. Fechas: Inicio y Fin using CustomDateEdit (Fixes cut-off text bug)
+        self.fecha_inicio_edit = CustomDateEdit(self)
         self.fecha_inicio_edit.setDate(QDate.currentDate())
         self.fecha_inicio_edit.dateChanged.connect(self._on_term_params_changed)
-        form.addRow("Fecha de Inicio:", self.fecha_inicio_edit)
+        form.addRow(make_field_label("Fecha de Inicio:"), self.fecha_inicio_edit)
 
-        self.fecha_fin_edit = DateEdit(self)
+        self.fecha_fin_edit = CustomDateEdit(self)
         self.fecha_fin_edit.setDate(QDate.currentDate().addDays(DEFAULT_TERM_DURATION))
         self.fecha_fin_edit.dateChanged.connect(self._recalculate_preview)
-        form.addRow("Fecha de Vencimiento:", self.fecha_fin_edit)
+        form.addRow(make_field_label("Fecha de Vencimiento:"), self.fecha_fin_edit)
 
         # 6. Tasa Mora Diaria using PercentSpinBox
         self.mora_spin = PercentSpinBox(self)
@@ -160,14 +172,14 @@ class NewLoanView(QWidget):
         self.mora_spin.setValue(DEFAULT_DAILY_MORA_RATE)
         self.mora_spin.setSuffix(" % diario")
         self.mora_spin.valueChanged.connect(self._recalculate_preview)
-        form.addRow("Punitorio por Mora:", self.mora_spin)
+        form.addRow(make_field_label("Punitorio por Mora:"), self.mora_spin)
 
         form_card_layout.addLayout(form)
         form_card_layout.addStretch()
 
         # Submit Button
         self.btn_submit = PrimaryPushButton(FluentIcon.ACCEPT, "Crear y Emitir Préstamo", self)
-        self.btn_submit.setFixedHeight(40)
+        self.btn_submit.setFixedHeight(42)
         self.btn_submit.clicked.connect(self._submit_loan)
         form_card_layout.addWidget(self.btn_submit)
 
@@ -177,7 +189,7 @@ class NewLoanView(QWidget):
         self.card_preview = CardWidget(self)
         self.card_preview.setFixedWidth(340)
         preview_layout = QVBoxLayout(self.card_preview)
-        preview_layout.setContentsMargins(20, 20, 20, 20)
+        preview_layout.setContentsMargins(22, 22, 22, 22)
         preview_layout.setSpacing(14)
 
         prev_header = SubtitleLabel("Resumen Financiero", self.card_preview)
@@ -188,11 +200,12 @@ class NewLoanView(QWidget):
         # Divider line
         line = QFrame(self.card_preview)
         line.setFrameShape(QFrame.HLine)
+        line.setStyleSheet(f"color: {ThemePalette.card_border()};")
         preview_layout.addWidget(line)
 
         # Summary Metrics
         prev_grid = QGridLayout()
-        prev_grid.setVerticalSpacing(10)
+        prev_grid.setVerticalSpacing(12)
 
         self.prev_capital = StrongBodyLabel("-", self)
         self.prev_interes_monto = StrongBodyLabel("-", self)
@@ -202,7 +215,8 @@ class NewLoanView(QWidget):
         self.prev_tasa_mora = StrongBodyLabel("-", self)
 
         def add_preview_row(title_text, val_lbl, r):
-            t_lbl = CaptionLabel(title_text, self)
+            t_lbl = QLabel(title_text, self)
+            t_lbl.setStyleSheet(f"font-size: 13px; font-weight: 600; color: {ThemePalette.text_secondary()};")
             prev_grid.addWidget(t_lbl, r, 0)
             prev_grid.addWidget(val_lbl, r, 1, Qt.AlignRight)
 
@@ -217,7 +231,7 @@ class NewLoanView(QWidget):
         # Big Total Highlight Box
         self.total_box = QFrame(self.card_preview)
         tb_layout = QVBoxLayout(self.total_box)
-        tb_layout.setContentsMargins(12, 12, 12, 12)
+        tb_layout.setContentsMargins(14, 14, 14, 14)
         self.tb_title = QLabel("TOTAL BASE A COBRAR", self.total_box)
         tb_layout.addWidget(self.tb_title)
         tb_layout.addWidget(self.prev_total_devolver)
@@ -234,12 +248,12 @@ class NewLoanView(QWidget):
         self.total_box.setStyleSheet(f"""
             QFrame {{
                 background-color: {h['bg']};
-                border: 1px solid {h['border']};
-                border-radius: 8px;
+                border: 2px solid {h['border']};
+                border-radius: 10px;
             }}
         """)
-        self.tb_title.setStyleSheet(f"font-size: 11px; font-weight: bold; color: {h['title']};")
-        self.prev_total_devolver.setStyleSheet(f"font-size: 22px; font-weight: 800; color: {h['text']};")
+        self.tb_title.setStyleSheet(f"font-size: 12px; font-weight: 800; color: {h['title']};")
+        self.prev_total_devolver.setStyleSheet(f"font-size: 24px; font-weight: 900; color: {h['text']};")
 
     def _on_theme_changed(self):
         self._apply_theme_box_styles()
@@ -279,12 +293,10 @@ class NewLoanView(QWidget):
         """
         Resolves client ID using currentData() or forgiving accent-free text search.
         """
-        # 1. Direct match from combo selection
         data = self.client_combo.currentData()
         if isinstance(data, int) and data > 0:
             return data
 
-        # 2. Text-based lookup with normalization
         typed = self.client_combo.text().strip()
         if not typed:
             return None
@@ -292,17 +304,14 @@ class NewLoanView(QWidget):
         clean_typed = _normalize_str(typed)
         digits_typed = "".join(ch for ch in typed if ch.isdigit())
 
-        # Exact display match
         for item in self._clients_cache:
             if clean_typed == _normalize_str(item["display"]):
                 return item["id"]
 
-        # Substring match on name or display
         for item in self._clients_cache:
             if clean_typed in _normalize_str(item["nombre"]) or clean_typed in _normalize_str(item["display"]):
                 return item["id"]
 
-        # Phone digits match
         if len(digits_typed) >= 4:
             for item in self._clients_cache:
                 if digits_typed in item["telefono"]:
@@ -321,18 +330,17 @@ class NewLoanView(QWidget):
 
         if not client_id:
             self.alert_banner.hide()
-            # If user typed something that doesn't match
             if self.client_combo.text().strip():
                 self.scoring_widget.label.setText("Cliente no encontrado")
                 self.scoring_widget.label.setStyleSheet("""
                     QLabel {
-                        background-color: #6B728022;
-                        color: #9CA3AF;
-                        border: 1px solid #6B728044;
+                        background-color: #F1F5F9;
+                        color: #64748B;
+                        border: 1px solid #CBD5E1;
                         border-radius: 9px;
                         padding: 3px 10px;
                         font-size: 11px;
-                        font-weight: 600;
+                        font-weight: 700;
                     }
                 """)
             return
@@ -352,11 +360,11 @@ class NewLoanView(QWidget):
                 self.alert_banner.setStyleSheet(f"""
                     QFrame#alertBanner {{
                         background-color: {c['bg']};
-                        border: 1px solid {c['border']};
+                        border: 2px solid {c['border']};
                         border-radius: 8px;
                     }}
                 """)
-                self.lbl_alert_text.setStyleSheet(f"font-size: 13px; font-weight: bold; color: {c['text']};")
+                self.lbl_alert_text.setStyleSheet(f"font-size: 13px; font-weight: 800; color: {c['text']};")
                 self.lbl_alert_text.setText(scoring.mensaje)
                 self.alert_banner.show()
             else:

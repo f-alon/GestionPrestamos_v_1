@@ -6,7 +6,7 @@ from ui.theme import ThemePalette
 
 class KPICard(SimpleCardWidget):
     """
-    Modern Fluent Card for Dashboard KPIs with adaptive theme contrast.
+    Modern Fluent Card for Dashboard KPIs with high-contrast theme styling.
     """
     def __init__(self, title: str, initial_value: str, icon: FluentIconBase, subtitle: str = "", metric_key: str = "capital", parent=None):
         super().__init__(parent)
@@ -14,7 +14,7 @@ class KPICard(SimpleCardWidget):
         self.raw_title = title
         self.raw_subtitle = subtitle
         self.raw_value = initial_value
-        self.setFixedHeight(105)
+        self.setFixedHeight(108)
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(18, 14, 18, 14)
@@ -22,13 +22,13 @@ class KPICard(SimpleCardWidget):
 
         # Icon container
         self.icon_box = QWidget(self)
-        self.icon_box.setFixedSize(48, 48)
+        self.icon_box.setFixedSize(50, 50)
         icon_box_layout = QVBoxLayout(self.icon_box)
         icon_box_layout.setContentsMargins(0, 0, 0, 0)
         icon_box_layout.setAlignment(Qt.AlignCenter)
 
         self.icon_widget = IconWidget(icon, self.icon_box)
-        self.icon_widget.setFixedSize(24, 24)
+        self.icon_widget.setFixedSize(26, 26)
         icon_box_layout.addWidget(self.icon_widget)
         layout.addWidget(self.icon_box)
 
@@ -56,18 +56,30 @@ class KPICard(SimpleCardWidget):
         accent = palette["accent"]
         title_color = palette["title"]
         sub_color = palette["subtitle"]
+        is_dark = ThemePalette.is_dark()
+
+        card_bg = "#1E222A" if is_dark else "#FFFFFF"
+        card_border = "#334155" if is_dark else "#CBD5E1"
+
+        self.setStyleSheet(f"""
+            KPICard {{
+                background-color: {card_bg};
+                border: 1px solid {card_border};
+                border-radius: 10px;
+            }}
+        """)
 
         self.icon_box.setStyleSheet(f"""
             QWidget {{
                 background-color: {accent}22;
                 border-radius: 12px;
-                border: 1px solid {accent}44;
+                border: 2px solid {accent};
             }}
         """)
 
-        self.title_label.setStyleSheet(f"color: {title_color}; font-size: 13px; font-weight: 600;")
-        self.value_label.setStyleSheet(f"color: {accent}; font-size: 21px; font-weight: 800;")
-        self.subtitle_label.setStyleSheet(f"color: {sub_color}; font-size: 11px;")
+        self.title_label.setStyleSheet(f"color: {title_color}; font-size: 13px; font-weight: 700;")
+        self.value_label.setStyleSheet(f"color: {accent}; font-size: 22px; font-weight: 900;")
+        self.subtitle_label.setStyleSheet(f"color: {sub_color}; font-size: 11px; font-weight: 500;")
         self.subtitle_label.setVisible(bool(self.raw_subtitle))
 
     def set_value(self, value: str, subtitle: str = None):

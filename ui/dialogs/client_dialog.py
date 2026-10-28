@@ -10,6 +10,7 @@ from qfluentwidgets import (
 )
 from database import get_session, Cliente
 from config import DATETIME_FORMAT
+from ui.theme import ThemePalette
 
 
 class ClientDialog(QDialog):
@@ -57,12 +58,17 @@ class ClientDialog(QDialog):
         self.notas_input.setPlaceholderText("Observaciones o notas adicionales...")
         self.notas_input.setFixedHeight(75)
 
-        form.addRow("Nombre *:", self.nombre_input)
-        form.addRow("Apellido *:", self.apellido_input)
-        form.addRow("Teléfono (WhatsApp) *:", self.telefono_input)
+        def make_field_label(text: str) -> QLabel:
+            lbl = QLabel(text, self)
+            lbl.setStyleSheet(f"font-size: 13px; font-weight: 600; color: {ThemePalette.text_primary()};")
+            return lbl
+
+        form.addRow(make_field_label("Nombre *:"), self.nombre_input)
+        form.addRow(make_field_label("Apellido *:"), self.apellido_input)
+        form.addRow(make_field_label("Teléfono (WhatsApp) *:"), self.telefono_input)
         form.addRow("", self.phone_hint)
-        form.addRow("Email:", self.email_input)
-        form.addRow("Notas:", self.notas_input)
+        form.addRow(make_field_label("Email:"), self.email_input)
+        form.addRow(make_field_label("Notas:"), self.notas_input)
 
         main_layout.addLayout(form)
         main_layout.addStretch()

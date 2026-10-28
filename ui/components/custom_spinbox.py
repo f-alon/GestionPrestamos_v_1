@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt
-from qfluentwidgets import DoubleSpinBox, SpinBox
+from qfluentwidgets import DoubleSpinBox, SpinBox, DateEdit, DateTimeEdit
 
 
 class CurrencySpinBox(DoubleSpinBox):
@@ -30,7 +30,6 @@ class CurrencySpinBox(DoubleSpinBox):
         super().resizeEvent(e)
         w, h = self.width(), self.height()
         btn_w = 64 if hasattr(self, "upButton") and self.upButton.isVisible() else 8
-        # Ensure lineEdit has full available width
         self.lineEdit().setGeometry(10, 2, max(60, w - btn_w - 12), h - 4)
 
 
@@ -65,3 +64,37 @@ class IntegerSpinBox(SpinBox):
         btn_w = 64 if hasattr(self, "upButton") and self.upButton.isVisible() else 8
         self.lineEdit().setGeometry(10, 2, max(40, w - btn_w - 12), h - 4)
 
+
+class CustomDateEdit(DateEdit):
+    """
+    Enhanced DateEdit that fixes Qt6 layout bug where date text was squished
+    to 1 pixel and cut off.
+    """
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setDisplayFormat("dd/MM/yyyy")
+        self.setMinimumWidth(180)
+        self.setFixedHeight(34)
+
+    def resizeEvent(self, e):
+        super().resizeEvent(e)
+        w, h = self.width(), self.height()
+        btn_w = 64 if hasattr(self, "upButton") and self.upButton.isVisible() else 8
+        self.lineEdit().setGeometry(10, 2, max(50, w - btn_w - 12), h - 4)
+
+
+class CustomDateTimeEdit(DateTimeEdit):
+    """
+    Enhanced DateTimeEdit that fixes Qt6 layout bug where datetime text was cut off.
+    """
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setDisplayFormat("dd/MM/yyyy HH:mm")
+        self.setMinimumWidth(210)
+        self.setFixedHeight(34)
+
+    def resizeEvent(self, e):
+        super().resizeEvent(e)
+        w, h = self.width(), self.height()
+        btn_w = 64 if hasattr(self, "upButton") and self.upButton.isVisible() else 8
+        self.lineEdit().setGeometry(10, 2, max(60, w - btn_w - 12), h - 4)

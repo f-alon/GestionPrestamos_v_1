@@ -1,5 +1,6 @@
 from datetime import datetime
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QColor, QBrush, QFont
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTableWidget, QTableWidgetItem,
     QHeaderView, QMenu
@@ -12,6 +13,7 @@ from database import get_session, Cliente, Prestamo
 from services.scoring_service import evaluar_cliente
 from ui.dialogs.client_dialog import ClientDialog
 from ui.components.scoring_badge import ScoringBadge
+from ui.theme import ThemePalette
 
 
 class ClientsView(QWidget):
@@ -144,18 +146,40 @@ class ClientsView(QWidget):
                     continue
             filtered.append(c)
 
+        is_dark = ThemePalette.is_dark()
+        fg_main = QBrush(QColor("#F8FAFC") if is_dark else QColor("#0F172A"))
+        font_bold = QFont()
+        font_bold.setBold(True)
+
         self.table.setRowCount(len(filtered))
         for row, c in enumerate(filtered):
             client_id = c["id"]
             it_id = QTableWidgetItem(f"#{client_id}")
             it_id.setData(Qt.UserRole, client_id)
+            it_id.setForeground(fg_main)
+
+            it_name = QTableWidgetItem(c["nombre_completo"])
+            it_name.setFont(font_bold)
+            it_name.setForeground(fg_main)
+
+            it_tel = QTableWidgetItem(c["telefono"])
+            it_tel.setForeground(fg_main)
+
+            it_email = QTableWidgetItem(c["email"])
+            it_email.setForeground(fg_main)
+
+            it_alta = QTableWidgetItem(c["fecha_alta"])
+            it_alta.setForeground(fg_main)
+
+            it_loans = QTableWidgetItem(c["prestamos_str"])
+            it_loans.setForeground(fg_main)
 
             self.table.setItem(row, 0, it_id)
-            self.table.setItem(row, 1, QTableWidgetItem(c["nombre_completo"]))
-            self.table.setItem(row, 2, QTableWidgetItem(c["telefono"]))
-            self.table.setItem(row, 3, QTableWidgetItem(c["email"]))
-            self.table.setItem(row, 4, QTableWidgetItem(c["fecha_alta"]))
-            self.table.setItem(row, 5, QTableWidgetItem(c["prestamos_str"]))
+            self.table.setItem(row, 1, it_name)
+            self.table.setItem(row, 2, it_tel)
+            self.table.setItem(row, 3, it_email)
+            self.table.setItem(row, 4, it_alta)
+            self.table.setItem(row, 5, it_loans)
 
             # Scoring Badge widget in table cell
             badge = ScoringBadge(c["scoring"], parent=self.table)

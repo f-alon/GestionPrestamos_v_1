@@ -19,7 +19,7 @@ def enable_sqlite_foreign_keys(dbapi_connection, connection_record):
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
 
-SessionFactory = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+SessionFactory = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
 ScopedSession = scoped_session(SessionFactory)
 
 def init_db():
@@ -29,7 +29,7 @@ def init_db():
 @contextmanager
 def get_session():
     """Context manager for handling database sessions cleanly."""
-    session = ScopedSession()
+    session = SessionFactory()
     try:
         yield session
         session.commit()

@@ -48,11 +48,11 @@ class ScoringBadge(QWidget):
             QLabel {{
                 background-color: {colors['bg']};
                 color: {colors['text']};
-                border: 1px solid {colors['border']};
+                border: 2px solid {colors['border']};
                 border-radius: 9px;
-                padding: 3px 10px;
+                padding: 3px 12px;
                 font-size: 11px;
-                font-weight: 700;
+                font-weight: 800;
             }}
         """)
 

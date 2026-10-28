@@ -10,6 +10,7 @@ from ui.main_window import MainWindow
 from ui.dialogs.client_dialog import ClientDialog
 from ui.dialogs.payment_dialog import PaymentDialog
 from ui.dialogs.loan_detail_dialog import LoanDetailDialog
+from ui.dialogs.loan_edit_dialog import LoanEditDialog
 from database import init_db, get_session, Prestamo, Cliente
 from database.seed import seed_demo_data_if_empty
 
@@ -27,6 +28,7 @@ class TestUI(unittest.TestCase):
         self.assertIsNotNone(window.dashboard_view)
         self.assertIsNotNone(window.new_loan_view)
         self.assertIsNotNone(window.clients_view)
+        self.assertIsNotNone(window.cash_view)
         self.assertIsNotNone(window.settings_view)
 
         # Verify Dashboard table has rows from seed
@@ -34,6 +36,10 @@ class TestUI(unittest.TestCase):
 
         # Verify Clients table has rows from seed
         self.assertGreater(window.clients_view.table.rowCount(), 0)
+
+        # Verify Cash View initialized
+        self.assertIsNotNone(window.cash_view.kpi_disponible)
+        self.assertIsNotNone(window.cash_view.chart)
 
         window.close()
 
@@ -56,6 +62,11 @@ class TestUI(unittest.TestCase):
         dlg_detail = LoanDetailDialog(p_id)
         self.assertIsNotNone(dlg_detail)
         dlg_detail.close()
+
+        dlg_edit = LoanEditDialog(p_id)
+        self.assertIsNotNone(dlg_edit)
+        self.assertGreater(dlg_edit.spin_monto.value(), 0)
+        dlg_edit.close()
 
 
 if __name__ == "__main__":

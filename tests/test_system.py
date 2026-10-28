@@ -1,7 +1,7 @@
 import os
 import unittest
 from datetime import date, timedelta
-from database import init_db, get_session, Cliente, Prestamo, Pago
+from database import init_db, get_session, Cliente, Prestamo, Pago, CierreCaja
 from services.financial_service import (
     calcular_prestamo, simular_prestamo, calcular_fecha_fin, FinancialSummary
 )
@@ -134,6 +134,99 @@ class TestGestionPrestamos(unittest.TestCase):
             ok_xlsx, _ = export_prestamos_excel(prestamos, xlsx_path)
             self.assertTrue(ok_xlsx)
             self.assertTrue(os.path.exists(xlsx_path))
+
+    def test_06_cash_service_balances(self):
+        from services.cash_service import (
+            set_capital_inicial, get_capital_inicial, calcular_balance_caja,
+            registrar_cierre_diario, exportar_balance_mensual_excel
+        )
+        set_capital_inicial(500000.0)
+        self.assertEqual(get_capital_inicial(), 500000.0)
+
+        balance = calcular_balance_caja()
+        self.assertEqual(balance.capital_inicial, 500000.0)
+        expected_liquido = 500000.0 - balance.capital_prestado_total + balance.total_cobrado
+        self.assertAlmostEqual(balance.capital_disponible_caja, expected_liquido, places=2)
+
+        # Daily closure
+        test_cierre_date = "2099-12-31"
+        with get_session() as session:
+            session.query(CierreCaja).filter_by(fecha=test_cierre_date).delete()
+
+        ok_cierre, cierre_msg = registrar_cierre_diario(fecha_str=test_cierre_date, notas="Test cierre")
+        self.assertTrue(ok_cierre)
+
+        # Clean up test closure
+        with get_session() as session:
+            session.query(CierreCaja).filter_by(fecha=test_cierre_date).delete()
+
+        # Monthly Excel Export
+        temp_dir = os.path.join(os.environ.get("TEMP", "."), "test_cash_export.xlsx")
+        today = date.today()
+        ok_exp, path_exp = exportar_balance_mensual_excel(today.year, today.month, temp_dir)
+        self.assertTrue(ok_exp)
+        self.assertTrue(os.path.exists(path_exp))
+
+    def test_07_loan_edit_and_cascade_delete(self):
+        # Create client, loan, payments
+        with get_session() as session:
+            c = Cliente(nombre="Test", apellido="Cascade", telefono="5491100000000")
+            session.add(c)
+            session.flush()
+
+            p = Prestamo(
+                cliente_id=c.id,
+                monto_prestado=50000.0,
+                porcentaje_interes=20.0,
+                tipo_plazo="DIAS",
+                duracion_plazo=30,
+                fecha_inicio="2026-01-01",
+                fecha_fin="2026-01-31",
+                tasa_mora_diaria=1.0,
+                estado="EN_CURSO"
+            )
+            session.add(p)
+            session.flush()
+
+            pago1 = Pago(prestamo_id=p.id, monto=10000.0, metodo_pago="Efectivo")
+            pago2 = Pago(prestamo_id=p.id, monto=5000.0, metodo_pago="Transferencia")
+            session.add_all([pago1, pago2])
+            session.commit()
+
+            p_id = p.id
+            c_id = c.id
+
+        # Verify loan and payments exist
+        with get_session() as session:
+            p_check = session.get(Prestamo, p_id)
+            self.assertIsNotNone(p_check)
+            self.assertEqual(len(p_check.pagos), 2)
+
+            # Test Loan Edit
+            p_check.monto_prestado = 60000.0
+            p_check.porcentaje_interes = 25.0
+            session.commit()
+
+        with get_session() as session:
+            p_edited = session.get(Prestamo, p_id)
+            self.assertEqual(p_edited.monto_prestado, 60000.0)
+            self.assertEqual(p_edited.porcentaje_interes, 25.0)
+
+            # Test Cascade Delete
+            session.delete(p_edited)
+            session.commit()
+
+        # Verify cascade deletion
+        with get_session() as session:
+            self.assertIsNone(session.get(Prestamo, p_id))
+            pagos_orphan = session.query(Pago).filter_by(prestamo_id=p_id).count()
+            self.assertEqual(pagos_orphan, 0)
+
+            # Clean up client
+            c_clean = session.get(Cliente, c_id)
+            if c_clean:
+                session.delete(c_clean)
+                session.commit()
 
 
 if __name__ == "__main__":

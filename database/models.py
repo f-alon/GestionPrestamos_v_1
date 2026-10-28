@@ -4,6 +4,34 @@ from sqlalchemy.orm import relationship
 from database.connection import Base
 from config import DATETIME_FORMAT
 
+
+class Configuracion(Base):
+    __tablename__ = "configuracion"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    clave = Column(String, unique=True, nullable=False)
+    valor = Column(String, nullable=False)
+
+    def __repr__(self):
+        return f"<Configuracion(clave='{self.clave}', valor='{self.valor}')>"
+
+
+class CierreCaja(Base):
+    __tablename__ = "cierres_caja"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    fecha = Column(String, nullable=False)  # 'YYYY-MM-DD'
+    saldo_inicial = Column(Float, nullable=False)
+    entradas_cobros = Column(Float, nullable=False)
+    salidas_prestamos = Column(Float, nullable=False)
+    saldo_final = Column(Float, nullable=False)
+    notas = Column(Text, nullable=True)
+    fecha_registro = Column(String, nullable=False, default=lambda: datetime.now().strftime(DATETIME_FORMAT))
+
+    def __repr__(self):
+        return f"<CierreCaja(fecha='{self.fecha}', saldo_inicial={self.saldo_inicial}, saldo_final={self.saldo_final})>"
+
+
 class Cliente(Base):
     __tablename__ = "clientes"
 
@@ -60,4 +88,3 @@ class Pago(Base):
 
     def __repr__(self):
         return f"<Pago(id={self.id}, prestamo_id={self.prestamo_id}, monto={self.monto}, fecha='{self.fecha_pago}')>"
-
