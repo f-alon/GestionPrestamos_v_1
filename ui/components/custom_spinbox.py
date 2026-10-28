@@ -6,7 +6,7 @@ class CurrencySpinBox(DoubleSpinBox):
     """
     Enhanced DoubleSpinBox for currency input.
     Fixes the Qt6/QFluentWidgets lineEdit squishing bug where large amounts
-    (e.g., $ 7,000,000.00) were cut off or not displayed properly.
+    (e.g., $ 7,000,000.00) were cut off or covered by stepper buttons.
     """
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -14,7 +14,8 @@ class CurrencySpinBox(DoubleSpinBox):
         self.setDecimals(2)
         self.setPrefix("$ ")
         self.setMinimumWidth(240)
-        self.setFixedHeight(34)
+        self.setFixedHeight(36)
+        self.setSymbolVisible(False)  # Currency inputs do not need 1-step buttons
 
     def textFromValue(self, val: float) -> str:
         return f"{val:,.2f}"
@@ -29,8 +30,9 @@ class CurrencySpinBox(DoubleSpinBox):
     def resizeEvent(self, e):
         super().resizeEvent(e)
         w, h = self.width(), self.height()
-        btn_w = 64 if hasattr(self, "upButton") and self.upButton.isVisible() else 8
-        self.lineEdit().setGeometry(10, 2, max(60, w - btn_w - 12), h - 4)
+        is_btn_visible = hasattr(self, "upButton") and not self.upButton.isHidden()
+        btn_w = 68 if is_btn_visible else 0
+        self.lineEdit().setGeometry(12, 2, max(60, w - btn_w - 20), h - 4)
 
 
 class PercentSpinBox(DoubleSpinBox):
@@ -41,13 +43,14 @@ class PercentSpinBox(DoubleSpinBox):
         self.setDecimals(2)
         self.setSuffix(" %")
         self.setMinimumWidth(160)
-        self.setFixedHeight(34)
+        self.setFixedHeight(36)
 
     def resizeEvent(self, e):
         super().resizeEvent(e)
         w, h = self.width(), self.height()
-        btn_w = 64 if hasattr(self, "upButton") and self.upButton.isVisible() else 8
-        self.lineEdit().setGeometry(10, 2, max(50, w - btn_w - 12), h - 4)
+        is_btn_visible = hasattr(self, "upButton") and not self.upButton.isHidden()
+        btn_w = 68 if is_btn_visible else 0
+        self.lineEdit().setGeometry(12, 2, max(50, w - btn_w - 20), h - 4)
 
 
 class IntegerSpinBox(SpinBox):
@@ -55,14 +58,15 @@ class IntegerSpinBox(SpinBox):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setRange(1, 1000)
-        self.setMinimumWidth(130)
-        self.setFixedHeight(34)
+        self.setMinimumWidth(140)
+        self.setFixedHeight(36)
 
     def resizeEvent(self, e):
         super().resizeEvent(e)
         w, h = self.width(), self.height()
-        btn_w = 64 if hasattr(self, "upButton") and self.upButton.isVisible() else 8
-        self.lineEdit().setGeometry(10, 2, max(40, w - btn_w - 12), h - 4)
+        is_btn_visible = hasattr(self, "upButton") and not self.upButton.isHidden()
+        btn_w = 68 if is_btn_visible else 0
+        self.lineEdit().setGeometry(12, 2, max(40, w - btn_w - 20), h - 4)
 
 
 class CustomDateEdit(DateEdit):
@@ -73,28 +77,28 @@ class CustomDateEdit(DateEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setDisplayFormat("dd/MM/yyyy")
-        self.setMinimumWidth(180)
-        self.setFixedHeight(34)
+        self.setMinimumWidth(200)
+        self.setFixedHeight(36)
 
     def resizeEvent(self, e):
         super().resizeEvent(e)
         w, h = self.width(), self.height()
-        btn_w = 64 if hasattr(self, "upButton") and self.upButton.isVisible() else 8
-        self.lineEdit().setGeometry(10, 2, max(50, w - btn_w - 12), h - 4)
+        is_btn_visible = hasattr(self, "upButton") and not self.upButton.isHidden()
+        btn_w = 68 if is_btn_visible else 0
+        self.lineEdit().setGeometry(12, 2, max(60, w - btn_w - 20), h - 4)
 
 
 class CustomDateTimeEdit(DateTimeEdit):
-    """
-    Enhanced DateTimeEdit that fixes Qt6 layout bug where datetime text was cut off.
-    """
+    """Enhanced DateTimeEdit with generous width and bug-free text geometry."""
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setDisplayFormat("dd/MM/yyyy HH:mm")
-        self.setMinimumWidth(210)
-        self.setFixedHeight(34)
+        self.setMinimumWidth(220)
+        self.setFixedHeight(36)
 
     def resizeEvent(self, e):
         super().resizeEvent(e)
         w, h = self.width(), self.height()
-        btn_w = 64 if hasattr(self, "upButton") and self.upButton.isVisible() else 8
-        self.lineEdit().setGeometry(10, 2, max(60, w - btn_w - 12), h - 4)
+        is_btn_visible = hasattr(self, "upButton") and not self.upButton.isHidden()
+        btn_w = 68 if is_btn_visible else 0
+        self.lineEdit().setGeometry(12, 2, max(80, w - btn_w - 20), h - 4)
